@@ -235,7 +235,7 @@ public class JUnitParser {
         
         private String getJenkinsStatus(String status) {
             
-            return (!StringUtils.isNullOrEmpty(status) && "Passed".equals(status))
+            return (!StringUtils.isNullOrEmpty(status) && ("Passed".equals(status) || "Warning".equals(status)))
                     ? JUnitTestCaseStatus.PASS
                     : JUnitTestCaseStatus.ERROR;
         }
