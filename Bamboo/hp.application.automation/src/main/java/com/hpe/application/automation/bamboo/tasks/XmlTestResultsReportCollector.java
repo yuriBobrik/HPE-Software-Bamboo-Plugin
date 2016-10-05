@@ -56,7 +56,7 @@ public class XmlTestResultsReportCollector implements TestReportCollector {
             for (Testcase testcase : testsuite.getTestcase())
             {
                 TestResults testResult = new TestResults(testcase.getClassname(), testcase.getName(), testcase.getTime());
-                if(testcase.getStatus().equals(JUnitTestCaseStatus.PASS))
+                if(testcase.getStatus().equals(JUnitTestCaseStatus.PASS) || testcase.getStatus().equals(JUnitTestCaseStatus.WARNING))
                 {
                     testResult.setState(TestState.SUCCESS);
                     successfulTestResults.add(testResult);
