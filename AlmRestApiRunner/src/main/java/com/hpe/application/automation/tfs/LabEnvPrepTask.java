@@ -1,14 +1,11 @@
 package com.hpe.application.automation.tfs;
 
-import com.hpe.application.automation.tools.common.StringUtils;
 import com.hpe.application.automation.tools.common.model.AutEnvironmentConfigModel;
 import com.hpe.application.automation.tools.common.model.AutEnvironmentParameterModel;
 import com.hpe.application.automation.tools.common.model.AutEnvironmentParameterType;
 import com.hpe.application.automation.tools.common.rest.RestClient;
 import com.hpe.application.automation.tools.common.sdk.AUTEnvironmentBuilderPerformer;
-import com.hpe.application.automation.tools.common.sdk.Logger;
 
-import javax.jws.soap.SOAPBinding;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,13 +36,15 @@ public class LabEnvPrepTask extends AbstractTask {
     private String AssignAutConfTo;
     private int UseAsConfId;
     private String PathToJSON;
-    private EnvParamType ParamType;
-    private String ParamName;
-    private String ParamValue;
+    private boolean ParamOnlyFirst;
+    private List<AutEnvironmentParameterModel> AutEnvironmentParameters = new ArrayList<AutEnvironmentParameterModel>();
+//    private EnvParamType ParamType;
+//    private String ParamName;
+//    private String ParamValue;
 
     public void parseArgs(String[] args) throws Exception {
         if (args.length < 1) {
-            System.out.println("'ALM server' parameter missing");
+            throw new Exception("'ALM server' parameter missing");
         }
         this.AlmServ = args[0];
 
@@ -90,7 +89,7 @@ public class LabEnvPrepTask extends AbstractTask {
             this.Action = Enum.valueOf(EnvConfigAction.class, args[6].toLowerCase());
         }
         catch (Throwable th) {
-            throw new Exception("Failed to parse 'New/Existing' parameter (use 'new' or 'existing' value)");
+            throw new Exception("Failed to parse 'New/Existing' parameter (use 'newconf' or 'existing' value)");
         }
 
         if (args.length < 8) {
@@ -108,14 +107,16 @@ public class LabEnvPrepTask extends AbstractTask {
             throw new Exception("Failed to extract 'Assign AUT Environment...' parameter (use 'assign:' prefix)");
         }
 
-        if (args.length < 10) {
-            throw new Exception("'Use as existing config with ID' parameter missing");
-        }
-        try {
-            this.UseAsConfId = Integer.valueOf(args[9].toLowerCase());
-        }
-        catch (Throwable th) {
-            throw new Exception("Failed to parse 'Use as existing config with ID' parameter (use unsigned integer value)");
+        if (this.Action == EnvConfigAction.existing) {
+            if (args.length < 10) {
+                throw new Exception("'Use as existing config with ID' parameter missing");
+            }
+            try {
+                System.out.println("Use as existing config with ID " + args[9].toLowerCase());
+                this.UseAsConfId = Integer.valueOf(args[9].toLowerCase());
+            } catch (Throwable th) {
+                throw new Exception("Failed to parse 'Use as existing config with ID' parameter (use unsigned integer value)");
+            }
         }
 
         if (args.length < 11) {
@@ -129,40 +130,57 @@ public class LabEnvPrepTask extends AbstractTask {
         }
 
         if (args.length < 12) {
-            throw new Exception("'Parameter type' parameter missing");
+            throw new Exception("'Get only the first value...' parameter missing");
         }
         try {
-            this.ParamType = Enum.valueOf(EnvParamType.class, args[11].toLowerCase());
+            this.ParamOnlyFirst =  Boolean.parseBoolean(args[11]);
         }
         catch (Throwable th) {
-            throw new Exception("Failed to parse 'Parameter type' parameter (use 'fromjson' or 'environment' or 'manual' value)");
+            throw new Exception("Failed to extract 'Get only the first value...' parameter");
         }
 
-        if (args.length < 13) {
-            throw new Exception("'Parameter name' parameter missing");
-        }
-        this.ParamName = args[12];
+        int i = 1;
+        while (i <= (args.length - 12)/3) {
+            String paramName = extractvalueFromParameter(args[12 + (i-1)*3 + 1], "parname" + Integer.toString(i) + ":");
+            String paramValue = extractvalueFromParameter(args[12 + (i-1)*3 + 2], "parval" + Integer.toString(i) + ":");
+            EnvParamType paramType;
+            try {
+                paramType = Enum.valueOf(EnvParamType.class, extractvalueFromParameter(args[12 + (i-1)*3], "partype" + Integer.toString(i) + ":").toLowerCase());
+            }
+            catch (Throwable th) {
+                throw new Exception("Failed to parse 'Parameter type' of " + Integer.toString(i) + "parameter (use 'fromjson' or 'environment' or 'manual' value)");
+            }
+            AutEnvironmentParameterType type = convertType(paramType);
 
-        if (args.length < 14) {
-            throw new Exception("'Parameter value' parameter missing");
+            AutEnvironmentParameters.add(new AutEnvironmentParameterModel(paramName, paramValue, type, this.ParamOnlyFirst));
+            i++;
         }
-        this.ParamValue = args[13];
+//        if (args.length < 13) {
+//            throw new Exception("'Parameter type' parameter missing");
+//        }
+//        try {
+//            this.ParamType = Enum.valueOf(EnvParamType.class, args[12].toLowerCase());
+//        }
+//        catch (Throwable th) {
+//            throw new Exception("Failed to parse 'Parameter type' parameter (use 'fromjson' or 'environment' or 'manual' value)");
+//        }
+//
+//        if (args.length < 14) {
+//            throw new Exception("'Parameter name' parameter missing");
+//        }
+//        this.ParamName = args[13];
+//
+//        if (args.length < 15) {
+//            throw new Exception("'Parameter value' parameter missing");
+//        }
+//        this.ParamValue = args[14];
     }
 
     public void execute() throws Throwable {
         boolean useExistingAutEnvConf = Action == Action.existing;
 
-        List<AutEnvironmentParameterModel> autEnvironmentParameters = new ArrayList<AutEnvironmentParameterModel>();
 //        for(AlmConfigParameter prm: AlmLabEnvPrepareTaskConfigurator.fetchAlmParametersFromContext(confMap))
 //        {
-            AutEnvironmentParameterType type = convertType(ParamType);
-
-            autEnvironmentParameters.add(
-                    new AutEnvironmentParameterModel(
-                            ParamName,
-                            ParamValue,
-                            type,
-                            false));
 //        }
 
         RestClient restClient = new RestClient(AlmServ, Domain, Project, UserName);
@@ -177,7 +195,7 @@ public class LabEnvPrepTask extends AbstractTask {
                 String.valueOf(EnvId),
                 useExistingAutEnvConf ? String.valueOf(UseAsConfId) : NewConfName,
                 PathToJSON,
-                autEnvironmentParameters);
+                AutEnvironmentParameters);
 
             AUTEnvironmentBuilderPerformer performer = new AUTEnvironmentBuilderPerformer(restClient, new RestLogger(), autEnvModel);
             performer.start();

@@ -49,7 +49,7 @@ public class MainClass {
                     }
                 }
                 catch (Throwable th) {
-                    System.out.println("Failed run with error: " + th.getMessage());
+                    System.out.println("Failed run with error: " + th.toString());
                     System.exit(ExitCode_Error_TaskExecutionInnerException);
                 }
                 break;
@@ -58,6 +58,7 @@ public class MainClass {
                 break;
             }
         }
+        System.exit(0);
     }
 
     private static RunKind getRunKind(String arg) {

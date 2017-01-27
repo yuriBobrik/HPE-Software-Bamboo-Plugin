@@ -79,10 +79,15 @@
                         </goals>
                         <configuration>
                             <descriptorRefs>
-                                <descriptorRef>
-                                    src
-                                </descriptorRef>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <classpathPrefix>lib/</classpathPrefix>
+                                    <mainClass>com.hpe.application.automation.tfs.MainClass</mainClass>
+                                </manifest>
+                            </archive>
                         </configuration>
                     </execution>
                 </executions>
