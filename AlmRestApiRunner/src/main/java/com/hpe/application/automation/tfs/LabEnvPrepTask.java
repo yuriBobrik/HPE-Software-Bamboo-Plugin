@@ -19,7 +19,7 @@ enum EnvConfigAction {
 }
 
 enum EnvParamType {
-    fromjson,
+    json,
     environment,
     manual
 }
@@ -148,7 +148,7 @@ public class LabEnvPrepTask extends AbstractTask {
                 paramType = Enum.valueOf(EnvParamType.class, extractvalueFromParameter(args[12 + (i-1)*3], "partype" + Integer.toString(i) + ":").toLowerCase());
             }
             catch (Throwable th) {
-                throw new Exception("Failed to parse 'Parameter type' of " + Integer.toString(i) + "parameter (use 'fromjson' or 'environment' or 'manual' value)");
+                throw new Exception("Failed to parse 'Parameter type' of " + Integer.toString(i) + " parameter value: '" + args[12 + (i-1)*3] + "'. Use 'fromjson' or 'environment' or 'manual' value.");
             }
             AutEnvironmentParameterType type = convertType(paramType);
 
@@ -213,7 +213,7 @@ public class LabEnvPrepTask extends AbstractTask {
         switch (sourceType) {
             case environment: return AutEnvironmentParameterType.ENVIRONMENT;
             case manual: return AutEnvironmentParameterType.USER_DEFINED;
-            case fromjson: return AutEnvironmentParameterType.EXTERNAL;
+            case json: return AutEnvironmentParameterType.EXTERNAL;
             default: return AutEnvironmentParameterType.UNDEFINED;
         }
     }
