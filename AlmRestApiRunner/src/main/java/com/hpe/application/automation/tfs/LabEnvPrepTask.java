@@ -95,7 +95,12 @@ public class LabEnvPrepTask extends AbstractTask {
         if (args.length < 8) {
             throw new Exception("'Create new configuration named' parameter missing");
         }
-        this.NewConfName = args[7];
+        try {
+            this.NewConfName = extractvalueFromParameter(args[7], "newnamed:");
+        }
+        catch (Throwable th) {
+            throw new Exception("Failed to extract 'Create new configuration named' parameter (use 'newnamed:' prefix)");
+        }
 
         if (args.length < 9) {
             throw new Exception("'Assign AUT Environment...' parameter missing");
@@ -112,10 +117,9 @@ public class LabEnvPrepTask extends AbstractTask {
                 throw new Exception("'Use as existing config with ID' parameter missing");
             }
             try {
-                System.out.println("Use as existing config with ID " + args[9].toLowerCase());
-                this.UseAsConfId = Integer.valueOf(args[9].toLowerCase());
+                this.UseAsConfId = Integer.valueOf(extractvalueFromParameter(args[9], "useasexisting:").toLowerCase());
             } catch (Throwable th) {
-                throw new Exception("Failed to parse 'Use as existing config with ID' parameter (use unsigned integer value)");
+                throw new Exception("Failed to parse 'Use as existing config with ID' parameter (use unsigned integer value with 'useasexisting:' prefix)");
             }
         }
 
